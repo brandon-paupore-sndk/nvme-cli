@@ -813,7 +813,7 @@ static int get_log(int argc, char **argv, struct command *cmd, struct plugin *pl
 		}
 
 		err = nvme_get_log13(fd, cfg.namespace_id, cfg.log_id,
-				     cfg.lsp, cfg.lpo, 0, cfg.rae,
+				     cfg.lsp, cfg.lpo, 0, 0, cfg.rae,
 				     cfg.log_len, log);
 		if (!err) {
 			if (!cfg.raw_binary) {
