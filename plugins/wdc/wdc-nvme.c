@@ -2223,7 +2223,8 @@ bool wdc_get_dev_mng_log_entry(__u32 log_length, __u32 entry_id,
 	 * buffer (we don't want a false negative because of a FW formatting error)
 	 */
 
-	/* Temporary change to log initial values */
+	/* Temporary change to log page and initial values */
+	d((unsigned char *)p_log_hdr, log_length, 16, 1);
 	fprintf(stderr, "Log Length: 0x%x Entry Id Searching For: 0x%x, ",
 		log_length, entry_id);
 
