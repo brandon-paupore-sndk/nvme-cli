@@ -2188,6 +2188,7 @@ bool wdc_get_dev_mng_log_entry(__u32 log_length, __u32 entry_id,
 	__u32 remaining_len = 0;
 	__u32 log_entry_hdr_size = sizeof(struct wdc_c2_log_subpage_header) - 1;
 	__u32 log_entry_size = 0;
+	__u32 log_entry_id = 0;
 	__u32 size = 0;
 	bool valid_log;
 	__u32 current_data_offset = 0;
@@ -2211,7 +2212,7 @@ bool wdc_get_dev_mng_log_entry(__u32 log_length, __u32 entry_id,
 	/* Get pointer to first log Entry */
 	size = sizeof(struct wdc_c2_log_page_header);
 	current_data_offset = size;
-	p_next_log_entry = (struct wdc_c2_log_subpage_header *)((__u8 *)p_log_hdr + current_data_offset);
+	p_next_log_entry = (struct wdc_c2_log_subpage_header *)(((__u8 *)p_log_hdr) + current_data_offset);
 	remaining_len = log_length - size;
 	valid_log = false;
 
@@ -2222,10 +2223,21 @@ bool wdc_get_dev_mng_log_entry(__u32 log_length, __u32 entry_id,
 	 * buffer (we don't want a false negative because of a FW formatting error)
 	 */
 
+	/* Temporary change to log initial values */
+	fprintf(stderr, "Log Length: 0x%x Entry Id Searching For: 0x%x, ",
+		log_length, entry_id);
+
 	/* Proceed only if there is at least enough data to read an entry header */
 	while (remaining_len >= log_entry_hdr_size) {
 		/* Get size of the next entry */
-		log_entry_size = p_next_log_entry->length;
+		log_entry_size = le32_to_cpu(p_next_log_entry->length);
+		log_entry_id = le32_to_cpu(p_next_log_entry->entry_id);
+
+		/* Temporary change to log each step of the parsing */
+		fprintf(stderr, "Data Offset: 0x%x Entry Size: 0x%x, ",
+			current_data_offset, log_entry_size);
+		fprintf(stderr, "Remaining Log Length: 0x%x Entry Id: 0x%x\n",
+			remaining_len, log_entry_id);
 
 		/*
 		 * If log entry size is 0 or the log entry goes past the end
@@ -2237,17 +2249,17 @@ bool wdc_get_dev_mng_log_entry(__u32 log_length, __u32 entry_id,
 			fprintf(stderr, "Data Offset: 0x%x Entry Size: 0x%x, ",
 				current_data_offset, log_entry_size);
 			fprintf(stderr, "Remaining Log Length: 0x%x Entry Id: 0x%x\n",
-				remaining_len, p_next_log_entry->entry_id);
+				remaining_len, log_entry_id);
 
 			/* Force the loop to end */
 			remaining_len = 0;
-		} else if (!p_next_log_entry->entry_id || p_next_log_entry->entry_id > 200) {
+		} else if (!log_entry_id || log_entry_id > 200) {
 			/* Invalid entry - fail the search */
 			fprintf(stderr, "ERROR: WDC: %s: Invalid entry found at offset: 0x%x ",
 				__func__, current_data_offset);
 			fprintf(stderr, "Entry Size: 0x%x, Remaining Log Length: 0x%x ",
 				log_entry_size, remaining_len);
-			fprintf(stderr, "Entry Id: 0x%x\n", p_next_log_entry->entry_id);
+			fprintf(stderr, "Entry Id: 0x%x\n", log_entry_id);
 
 			/* Force the loop to end */
 			remaining_len = 0;
@@ -2258,7 +2270,7 @@ bool wdc_get_dev_mng_log_entry(__u32 log_length, __u32 entry_id,
 		} else {
 			/* Structure must have at least one valid entry to be considered valid */
 			valid_log = true;
-			if (p_next_log_entry->entry_id == entry_id)
+			if (log_entry_id == entry_id)
 				/* A potential match. */
 				*p_p_found_log_entry = p_next_log_entry;
 
